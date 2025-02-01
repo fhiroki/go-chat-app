@@ -18,6 +18,7 @@
   <h1>Chat App with WebSocket</h1>
   <ul id="messages"></ul>
   <form id="chatbox">
+    {{ .UserData.email }}:<br/>
     <textarea id="message"></textarea>
     <input type="submit" value="Send">
   </form>
@@ -33,7 +34,7 @@
           alert("error: socket not connected");
           return false;
         }
-        socket.send(msgBox.val());
+        socket.send(JSON.stringify({"Message": msgBox.val()}));
         msgBox.val("");
         return false;
       });
@@ -43,7 +44,8 @@
       } else {
         socket = new WebSocket("ws://{{.Host}}/room");
         socket.onmessage = function (e) {
-          messages.append($("<li>").text(e.data));
+          var msg = JSON.parse(e.data);
+          messages.append($("<li>").append(msg.Email + ": " + msg.Message));
         }
       }
     })
