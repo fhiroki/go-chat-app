@@ -29,7 +29,9 @@ func MustAuth(handler http.Handler) http.Handler {
 	return &authHandler{next: handler}
 }
 
-// path: /auth/{action}/{provider}
+// loginHandler は /auth/{action}/{provider} の URL パスにマッチする認証処理ハンドラです。
+// リクエストの action に "login" が指定された場合、認証を開始し、
+// "callback" の場合は認証のコールバックを処理してクライアントに認証情報をセットします。
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	segs := strings.Split(r.URL.Path, "/")
 	if len(segs) < 4 {
