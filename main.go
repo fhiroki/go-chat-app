@@ -52,7 +52,7 @@ func main() {
 	flag.Parse()
 	log.Println("Starting web server on port", *addr)
 	goth.UseProviders(
-		google.New(os.Getenv("GOOGLE_KEY"), os.Getenv("GOOGLE_SECRET"), "http://localhost:8080/auth/callback/google"),
+		google.New(os.Getenv("GOOGLE_KEY"), os.Getenv("GOOGLE_SECRET"), os.Getenv("GOOGLE_REDIRECT_URL")),
 	)
 
 	r := newRoom()
