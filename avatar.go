@@ -5,20 +5,41 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/markbates/goth"
 )
 
 var ErrNoAvatarURL = errors.New("chat: Unable to get an avatar URL.")
 
+type ChatUser interface {
+	UniqueID() string
+	AvatarURL() string
+}
+
+type chatUser struct {
+	goth.User
+	uniqueID string
+}
+
+func (u chatUser) UniqueID() string {
+	return u.uniqueID
+}
+
+func (u chatUser) AvatarURL() string {
+	return u.User.AvatarURL
+}
+
 type Avatar interface {
-	GetAvatarURL(c *client) (string, error)
+	GetAvatarURL(ChatUser) (string, error)
 }
 
 type AuthAvatar struct{}
 
 var UseAuthAvatar AuthAvatar
 
-func (AuthAvatar) GetAvatarURL(c *client) (string, error) {
-	if url, ok := c.userData["avatar_url"]; ok {
+func (AuthAvatar) GetAvatarURL(u ChatUser) (string, error) {
+	url := u.AvatarURL()
+	if url != "" {
 		return url, nil
 	}
 	return "", ErrNoAvatarURL
@@ -28,24 +49,19 @@ type GravatarAvatar struct{}
 
 var UseGravatar GravatarAvatar
 
-func (GravatarAvatar) GetAvatarURL(c *client) (string, error) {
-	if userID, ok := c.userData["user_id"]; ok {
-		return fmt.Sprintf("https://www.gravatar.com/avatar/%s", userID), nil
-	}
-	return "", ErrNoAvatarURL
+func (GravatarAvatar) GetAvatarURL(u ChatUser) (string, error) {
+	return fmt.Sprintf("https://www.gravatar.com/avatar/%s", u.UniqueID()), nil
 }
 
 type FileSystemAvatar struct{}
 
 var UseFileSystemAvatar FileSystemAvatar
 
-func (FileSystemAvatar) GetAvatarURL(c *client) (string, error) {
-	if userID, ok := c.userData["user_id"]; ok {
-		if files, err := os.ReadDir("avatars"); err == nil {
-			for _, file := range files {
-				if !file.IsDir() && strings.HasPrefix(file.Name(), userID) {
-					return "/avatars/" + file.Name(), nil
-				}
+func (FileSystemAvatar) GetAvatarURL(u ChatUser) (string, error) {
+	if files, err := os.ReadDir("avatars"); err == nil {
+		for _, file := range files {
+			if !file.IsDir() && strings.HasPrefix(file.Name(), u.UniqueID()) {
+				return "/avatars/" + file.Name(), nil
 			}
 		}
 	}

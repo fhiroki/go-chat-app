@@ -4,21 +4,24 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/markbates/goth"
 )
 
 func TestAuthAvatar(t *testing.T) {
 	var authAvatar AuthAvatar
-	client := new(client)
-	url, err := authAvatar.GetAvatarURL(client)
+	testUser := goth.User{
+		AvatarURL: "",
+	}
+	testChatUser := &chatUser{User: testUser}
+	url, err := authAvatar.GetAvatarURL(testChatUser)
 	if err != ErrNoAvatarURL {
 		t.Error("AuthAvatar.GetAvatarURL should return ErrNoAvatarURL when no value present")
 	}
 
 	testUrl := "http://url-to-avatar/"
-	client.userData = map[string]string{
-		"avatar_url": testUrl,
-	}
-	url, err = authAvatar.GetAvatarURL(client)
+	testChatUser.User.AvatarURL = testUrl
+	url, err = authAvatar.GetAvatarURL(testChatUser)
 	if err != nil {
 		t.Error("AuthAvatar.GetAvatarURL should return no error when value present")
 	} else if url != testUrl {
@@ -28,14 +31,12 @@ func TestAuthAvatar(t *testing.T) {
 
 func TestGravatarAvatar(t *testing.T) {
 	var gravatarAvatar GravatarAvatar
-	userID := "0bc83cb571cd1c50ba6f3e8a78ef1346"
-	client := new(client)
-	client.userData = map[string]string{"user_id": userID}
-	url, err := gravatarAvatar.GetAvatarURL(client)
+	user := &chatUser{uniqueID: "abc"}
+	url, err := gravatarAvatar.GetAvatarURL(user)
 	if err != nil {
 		t.Error("GravatarAvatar.GetAvatarURL should not return an error")
 	}
-	if url != "https://www.gravatar.com/avatar/"+userID {
+	if url != "https://www.gravatar.com/avatar/abc" {
 		t.Errorf("GravatarAvatar.GetAvatarURL wrongly returned %s", url)
 	}
 }
@@ -46,9 +47,8 @@ func TestFileSystemAvatar(t *testing.T) {
 	defer os.Remove(filename)
 
 	var fileSystemAvatar FileSystemAvatar
-	client := new(client)
-	client.userData = map[string]string{"user_id": "abc"}
-	url, err := fileSystemAvatar.GetAvatarURL(client)
+	user := &chatUser{uniqueID: "abc"}
+	url, err := fileSystemAvatar.GetAvatarURL(user)
 	if err != nil {
 		t.Error("FileSystemAvatar.GetAvatarURL should not return an error")
 	}

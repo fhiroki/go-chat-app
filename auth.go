@@ -64,11 +64,18 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		chatUser := &chatUser{User: user}
+		chatUser.uniqueID = getUserID(user.Email)
+		avatarUrl, err := avatars.GetAvatarURL(chatUser)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		data := map[string]string{
-			"user_id":    getUserID(user.Email),
+			"user_id":    chatUser.uniqueID,
 			"name":       user.Name,
 			"email":      user.Email,
-			"avatar_url": user.AvatarURL,
+			"avatar_url": avatarUrl,
 		}
 		jsonData, err := json.Marshal(data)
 		if err != nil {
