@@ -1,9 +1,11 @@
 package main
 
 import (
+	"crypto/md5"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -27,6 +29,12 @@ func (h *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func MustAuth(handler http.Handler) http.Handler {
 	return &authHandler{next: handler}
+}
+
+func getUserID(email string) string {
+	m := md5.New()
+	io.WriteString(m, strings.ToLower(email))
+	return fmt.Sprintf("%x", m.Sum(nil))
 }
 
 // loginHandler は /auth/{action}/{provider} の URL パスにマッチする認証処理ハンドラです。
@@ -56,8 +64,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// なぜかNameが取得できない
 		data := map[string]string{
+			"user_id":    getUserID(user.Email),
 			"name":       user.Name,
 			"email":      user.Email,
 			"avatar_url": user.AvatarURL,
