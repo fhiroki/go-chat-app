@@ -1,0 +1,21 @@
+<html>
+  <head>
+    <title>Upload</title>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+  </head>
+  <body>
+    <div class="container">
+      <div class="page-header">
+        <h1>Please upload your avatar</h1>
+      </div>
+      <form role="form" action="/uploader" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="user_id" value="{{ .UserData.user_id }}">
+        <div class="form-group">
+          <label for="message">Choose your avatar</label>
+          <input type="file" name="avatar">
+        </div>
+        <button type="submit" class="btn btn-primary">Upload</button>
+      </form>
+    </div>
+  </body>
+</html>
