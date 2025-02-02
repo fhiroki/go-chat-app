@@ -1,6 +1,13 @@
 import { FaComments } from "react-icons/fa";
 
-export default function Home() {
+import { cookies } from "next/headers";
+
+export default async function Home() {
+  const cookieStore = await cookies();
+  const authCookie = cookieStore.get("auth");
+  const targetHref = authCookie ? "/chat" : "/login";
+  const buttonText = authCookie ? "チャットに入る" : "ログインする";
+
   return (
     <div className="flex flex-col min-h-screen items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-8">
       <main className="flex flex-col gap-6 items-center">
@@ -12,14 +19,14 @@ export default function Home() {
         <div>
           <a
             className="rounded-full bg-white text-blue-600 px-6 py-3 font-semibold shadow hover:bg-gray-100 transition-colors"
-            href="/chat"
+            href={targetHref}
           >
-            チャットに入る
+            {buttonText}
           </a>
         </div>
       </main>
       <footer className="mt-10">
-        <p className="text-sm text-white">© 2023 チャットアプリ</p>
+        <p className="text-sm text-white">© 2025 チャットアプリ</p>
       </footer>
     </div>
   );
