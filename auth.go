@@ -101,7 +101,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.Header().Set("Location", "/chat")
+		w.Header().Set("Location", "http://localhost:3000/chat")
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	default:
 		w.WriteHeader(http.StatusNotFound)
@@ -116,6 +116,6 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 		Path:   "/",
 		MaxAge: -1,
 	})
-	w.Header().Set("Location", "/chat")
+	w.Header().Set("Location", "http://localhost:3000/login")
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }

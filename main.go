@@ -71,6 +71,7 @@ func main() {
 	http.HandleFunc("/uploader", uploaderHandler)
 	http.HandleFunc("/logout", logoutHandler)
 	http.HandleFunc("/auth/", loginHandler)
+	http.HandleFunc("/messages/delete", deleteMessageHandler)
 	http.Handle("/room", r)
 
 	go r.run()
