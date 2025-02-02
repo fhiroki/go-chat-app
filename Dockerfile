@@ -4,7 +4,8 @@ WORKDIR /app
 
 COPY . .
 
-RUN go build -o chat .
+RUN apk update && apk add --no-cache gcc musl-dev
+RUN CGO_ENABLED=1 GOOS=linux go build -o chat .
 
 EXPOSE 8080
 
