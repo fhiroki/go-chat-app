@@ -13,6 +13,7 @@ import (
 
 	"github.com/fhiroki/chat/trace"
 	"github.com/markbates/goth"
+	"github.com/markbates/goth/providers/github"
 	"github.com/markbates/goth/providers/google"
 )
 
@@ -57,6 +58,7 @@ func main() {
 	log.Println("Starting web server on port", *addr)
 	goth.UseProviders(
 		google.New(os.Getenv("GOOGLE_KEY"), os.Getenv("GOOGLE_SECRET"), os.Getenv("GOOGLE_REDIRECT_URL")),
+		github.New(os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"), os.Getenv("GITHUB_REDIRECT_URL")),
 	)
 
 	r := newRoom()
