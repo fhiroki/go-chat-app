@@ -86,10 +86,10 @@
         socket = new WebSocket(uri);
         socket.onmessage = function (e) {
           var msg = JSON.parse(e.data);
-          var whenStr = "";
-          if (msg.When) {
-            var t = new Date(msg.When);
-            whenStr = t.toLocaleString();
+          var createdAt = "";
+          if (msg.CreatedAt) {
+            var t = new Date(msg.CreatedAt);
+            createdAt = t.toLocaleString();
           }
           messages.append($("<li>").append(
             $("<img>").attr("title", msg.Email).attr("src", msg.AvatarURL),
@@ -97,7 +97,7 @@
             $("<br>"),
             $("<span>").text(msg.Message).css({ "margin-left": "25px" }),
             $("<br>"),
-            $("<span>").text("[" + whenStr + "]").css({ "margin-left": "25px" })));
+            $("<span>").text("[" + createdAt + "]").css({ "margin-left": "25px" })));
         }
       }
     })

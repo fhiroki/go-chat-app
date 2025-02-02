@@ -50,6 +50,10 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func main() {
 	addr := flag.String("addr", ":8080", "The addr of the application.")
 	flag.Parse()
+
+	InitSQLiteDB("chat.db")
+	defer db.Close()
+
 	log.Println("Starting web server on port", *addr)
 	goth.UseProviders(
 		google.New(os.Getenv("GOOGLE_KEY"), os.Getenv("GOOGLE_SECRET"), os.Getenv("GOOGLE_REDIRECT_URL")),

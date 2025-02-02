@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -8,7 +9,7 @@ import (
 
 type client struct {
 	socket   *websocket.Conn
-	send     chan *message
+	send     chan *SendMessage
 	room     *room
 	userData map[string]string
 }
@@ -16,18 +17,32 @@ type client struct {
 func (c *client) read() {
 	defer c.socket.Close()
 
+	msgs, err := GetMessages()
+	if err != nil {
+		log.Println("Failed to get messages: ", err)
+	} else {
+		for _, msg := range msgs {
+			c.send <- &msg
+		}
+	}
+
 	for {
-		var msg message
+		var msg SendMessage
 		if err := c.socket.ReadJSON(&msg); err != nil {
 			break
 		}
-		msg.When = time.Now()
-		msg.Name = c.userData["name"]
+
+		msg.CreatedAt = time.Now()
+		msg.UserName = c.userData["name"]
 		msg.Email = c.userData["email"]
-		if avatarURL, ok := c.userData["avatar_url"]; ok {
-			msg.AvatarURL = avatarURL
-		}
+		msg.AvatarURL = c.userData["avatar_url"]
 		c.room.forward <- &msg
+
+		SaveMessage(Message{
+			UserID:    c.userData["user_id"],
+			Message:   msg.Message,
+			CreatedAt: msg.CreatedAt,
+		})
 	}
 }
 

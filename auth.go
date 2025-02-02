@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/markbates/goth/gothic"
 )
@@ -88,6 +89,17 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			Value: authCookieValue,
 			Path:  "/",
 		})
+
+		if err := CreateUser(User{
+			ID:        chatUser.uniqueID,
+			Name:      user.Name,
+			Email:     user.Email,
+			AvatarURL: avatarUrl,
+			CreatedAt: time.Now(),
+		}); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		w.Header().Set("Location", "/chat")
 		w.WriteHeader(http.StatusTemporaryRedirect)

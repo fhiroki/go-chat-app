@@ -11,7 +11,7 @@ import (
 )
 
 type room struct {
-	forward chan *message
+	forward chan *SendMessage
 	join    chan *client
 	leave   chan *client
 	clients map[*client]bool
@@ -20,7 +20,7 @@ type room struct {
 
 func newRoom() *room {
 	return &room{
-		forward: make(chan *message),
+		forward: make(chan *SendMessage),
 		join:    make(chan *client),
 		leave:   make(chan *client),
 		clients: make(map[*client]bool),
@@ -86,7 +86,7 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
-	client := &client{socket: socket, send: make(chan *message, messageBufferSize), room: r, userData: userData}
+	client := &client{socket: socket, send: make(chan *SendMessage, messageBufferSize), room: r, userData: userData}
 	r.join <- client
 	defer func() { r.leave <- client }()
 	go client.write()
