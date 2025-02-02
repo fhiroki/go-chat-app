@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import Head from "next/head";
+import Image from "next/image";
 
 interface MessageType {
   id: number;
@@ -118,11 +119,13 @@ export default function ChatPage() {
             <ul id="messages" className="space-y-4">
               {messages.map((msg, index) => (
                 <li key={index} className="flex items-start space-x-4">
-                  <img
+                  <Image
                     title={msg.email}
                     src={msg.avatarURL}
                     alt="avatar"
-                    className="w-10 h-10 rounded-full object-cover"
+                    width={40}
+                    height={40}
+                    className="rounded-full object-cover"
                   />
                   <div className="flex flex-col w-full">
                     <div className="flex items-center">
@@ -132,12 +135,14 @@ export default function ChatPage() {
                       <span className="text-xs text-gray-500 ml-2">
                         [{msg.createdAt}]
                       </span>
-                      <button
-                        onClick={() => handleDelete(msg.id)}
-                        className="ml-auto text-xs text-red-500 hover:text-red-600 transition-colors"
-                      >
-                        削除
-                      </button>
+                      {userEmail === msg.email && (
+                        <button
+                          onClick={() => handleDelete(msg.id)}
+                          className="ml-auto text-xs text-red-500 hover:text-red-600 transition-colors"
+                        >
+                          削除
+                        </button>
+                      )}
                     </div>
                     <div className="mt-2 bg-gray-100 p-4 rounded-xl shadow transition duration-300 ease-in-out hover:shadow-md">
                       <span className="text-gray-700">{msg.message}</span>
