@@ -3,7 +3,12 @@
 
 <head>
   <title>Chat</title>
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
   <style>
+    body {
+      margin: 20px;
+    }
+
     input {
       display: block;
     }
@@ -11,17 +16,46 @@
     ul {
       list-style: none;
     }
+
+    ul#messages {
+      list-style: none;
+    }
+
+    ul#messages li {
+      margin-bottom: 2px;
+    }
+
+    ul#messages li img {
+      width: 25px;
+      height: 25px;
+      vertical-align: middle;
+      margin-right: 5px;
+    }
   </style>
 </head>
 
 <body>
   <h1>Chat App with WebSocket</h1>
-  <ul id="messages"></ul>
-  <form id="chatbox">
-    {{ .UserData.email }}:<br />
-    <textarea id="message"></textarea>
-    <input type="submit" value="Send">
+  <div class="container">
+    <div class="panel panel-default">
+      <div class="panel-body">
+        <h3>Chat Room</h3>
+        <ul id="messages"></ul>
+      </div>
+    </div>
+  </div>
+
+  <form id="chatbox" role="form">
+    <div class="form-group">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <label for="message">{{ .UserData.email }}</label>
+        <a href="/logout">Logout</a>
+      </div>
+      <textarea id="message" class="form-control"></textarea>
+    </div>
+    <input type="submit" value="Send" class="btn btn-default">
   </form>
+
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
   <script>
     $(function () {
@@ -50,7 +84,13 @@
             var t = new Date(msg.When);
             whenStr = t.toLocaleString();
           }
-          messages.append($("<li>").append(msg.Email + ": " + msg.Message + " [" + whenStr + "]"));
+          messages.append($("<li>").append(
+            $("<img>").attr("title", msg.Email).attr("src", msg.AvatarURL),
+            $("<span>").text(msg.Email),
+            $("<br>"),
+            $("<span>").text(msg.Message).css({ "margin-left": "25px" }),
+            $("<br>"),
+            $("<span>").text("[" + whenStr + "]").css({ "margin-left": "25px" })));
         }
       }
     })
