@@ -16,25 +16,25 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [input, setInput] = useState("");
   const socketRef = useRef<WebSocket | null>(null);
+  const [userEmail, setUserEmail] = useState("unknown@example.com");
 
-  // ユーザのemailをクッキー（auth）から取得する関数
-  const getUserEmail = () => {
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
     const cookies = document.cookie.split("; ");
     for (const cookie of cookies) {
       if (cookie.startsWith("auth=")) {
         const encodedValue = cookie.substring("auth=".length);
         try {
           const decoded = JSON.parse(atob(encodedValue));
-          return decoded.email;
+          setUserEmail(decoded.email);
         } catch (error) {
           console.error("Failed to get user email:", error);
         }
       }
     }
-    return "unknown@example.com";
-  };
-
-  const userEmail = getUserEmail();
+  }, []);
 
   useEffect(() => {
     if (!window.WebSocket) {
