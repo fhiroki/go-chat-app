@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"crypto/md5"
@@ -10,26 +10,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fhiroki/chat/internal/domain/avatar"
+	"github.com/fhiroki/chat/internal/domain/user"
+	userDomain "github.com/fhiroki/chat/internal/domain/user"
 	"github.com/markbates/goth/gothic"
 )
 
-type authHandler struct {
-	next http.Handler
+type AuthHandler struct {
+	userService user.UserService
 }
 
-func (h *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if cookie, err := r.Cookie("auth"); err == http.ErrNoCookie || cookie.Value == "" {
-		w.Header().Set("Location", "/login")
-		w.WriteHeader(http.StatusTemporaryRedirect)
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	} else {
-		h.next.ServeHTTP(w, r)
-	}
-}
-
-func MustAuth(handler http.Handler) http.Handler {
-	return &authHandler{next: handler}
+func NewAuthHandler(userService user.UserService) *AuthHandler {
+	return &AuthHandler{userService: userService}
 }
 
 func getUserID(email string) string {
@@ -38,10 +30,8 @@ func getUserID(email string) string {
 	return fmt.Sprintf("%x", m.Sum(nil))
 }
 
-// loginHandler は /auth/{action}/{provider} の URL パスにマッチする認証処理ハンドラです。
-// リクエストの action に "login" が指定された場合、認証を開始し、
-// "callback" の場合は認証のコールバックを処理してクライアントに認証情報をセットします。
-func loginHandler(w http.ResponseWriter, r *http.Request) {
+// LoginHandler handles auth paths. It replaces the unexported loginHandler.
+func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	segs := strings.Split(r.URL.Path, "/")
 	if len(segs) < 4 {
 		w.WriteHeader(http.StatusNotFound)
@@ -64,16 +54,15 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		chatUser := &chatUser{User: user}
-		chatUser.uniqueID = getUserID(user.Email)
-		avatarUrl, err := avatars.GetAvatarURL(chatUser)
+		cUser := &userDomain.ChatUser{User: user}
+		cUser.SetUniqueID(getUserID(user.Email))
+		avatarUrl, err := avatar.Avatars.GetAvatarURL(cUser)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		data := map[string]string{
-			"user_id":    chatUser.uniqueID,
+			"user_id":    cUser.UniqueID(),
 			"name":       user.Name,
 			"email":      user.Email,
 			"avatar_url": avatarUrl,
@@ -90,8 +79,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			Path:  "/",
 		})
 
-		if err := CreateUser(User{
-			ID:        chatUser.uniqueID,
+		if err := h.userService.Create(r.Context(), userDomain.User{
+			ID:        cUser.UniqueID(),
 			Name:      user.Name,
 			Email:     user.Email,
 			AvatarURL: avatarUrl,
@@ -101,7 +90,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.Header().Set("Location", "http://localhost:3000/chat")
+		w.Header().Set("Location", "http://localhost:8080/chat")
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	default:
 		w.WriteHeader(http.StatusNotFound)
@@ -109,13 +98,14 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func logoutHandler(w http.ResponseWriter, r *http.Request) {
+// LogoutHandler handles logging out
+func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:   "auth",
 		Value:  "",
 		Path:   "/",
 		MaxAge: -1,
 	})
-	w.Header().Set("Location", "http://localhost:3000/login")
+	w.Header().Set("Location", "http://localhost:8080/login")
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }

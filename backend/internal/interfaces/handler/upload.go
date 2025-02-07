@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"io"
@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-func uploaderHandler(w http.ResponseWriter, r *http.Request) {
+func UploaderHandler(w http.ResponseWriter, r *http.Request) {
 	userID := r.FormValue("user_id")
 	file, header, err := r.FormFile("avatar")
 	if err != nil {

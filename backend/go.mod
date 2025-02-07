@@ -5,6 +5,7 @@ go 1.23.3
 require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/markbates/goth v1.80.0
+	github.com/mattn/go-sqlite3 v1.14.24
 )
 
 require (
@@ -15,7 +16,6 @@ require (
 	github.com/gorilla/mux v1.6.2 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gorilla/sessions v1.1.1 // indirect
-	github.com/mattn/go-sqlite3 v1.14.24 // indirect
 	golang.org/x/oauth2 v0.17.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect

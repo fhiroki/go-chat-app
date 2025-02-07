@@ -68,7 +68,7 @@
           alert("error: socket not connected");
           return false;
         }
-        socket.send(JSON.stringify({ "Message": msgBox.val() }));
+        socket.send(JSON.stringify({ "content": msgBox.val() }));
         msgBox.val("");
         return false;
       });
@@ -86,18 +86,19 @@
         socket = new WebSocket(uri);
         socket.onmessage = function (e) {
           var msg = JSON.parse(e.data);
-          var createdAt = "";
-          if (msg.CreatedAt) {
-            var t = new Date(msg.CreatedAt);
-            createdAt = t.toLocaleString();
+          console.log(msg);
+          var created_at = "";
+          if (msg.created_at) {
+            var t = new Date(msg.created_at);
+            created_at = t.toLocaleString();
           }
           messages.append($("<li>").append(
-            $("<img>").attr("title", msg.Email).attr("src", msg.AvatarURL),
-            $("<span>").text(msg.Email),
+            $("<img>").attr("title", msg.email).attr("src", msg.avatar_url),
+            $("<span>").text(msg.email),
             $("<br>"),
-            $("<span>").text(msg.Message).css({ "margin-left": "25px" }),
+            $("<span>").text(msg.content).css({ "margin-left": "25px" }),
             $("<br>"),
-            $("<span>").text("[" + createdAt + "]").css({ "margin-left": "25px" })));
+            $("<span>").text("[" + created_at + "]").css({ "margin-left": "25px" })));
         }
       }
     })

@@ -1,4 +1,4 @@
-package main
+package avatar
 
 import (
 	"errors"
@@ -6,36 +6,24 @@ import (
 	"os"
 	"strings"
 
-	"github.com/markbates/goth"
+	"github.com/fhiroki/chat/internal/domain/user"
 )
+
+var Avatars Avatar = TryAvatars{
+	UseFileSystemAvatar,
+	UseAuthAvatar,
+	UseGravatar,
+}
 
 var ErrNoAvatarURL = errors.New("chat: Unable to get an avatar URL.")
 
-type ChatUser interface {
-	UniqueID() string
-	AvatarURL() string
-}
-
-type chatUser struct {
-	goth.User
-	uniqueID string
-}
-
-func (u chatUser) UniqueID() string {
-	return u.uniqueID
-}
-
-func (u chatUser) AvatarURL() string {
-	return u.User.AvatarURL
-}
-
 type Avatar interface {
-	GetAvatarURL(ChatUser) (string, error)
+	GetAvatarURL(user.UserInterface) (string, error)
 }
 
 type TryAvatars []Avatar
 
-func (a TryAvatars) GetAvatarURL(u ChatUser) (string, error) {
+func (a TryAvatars) GetAvatarURL(u user.UserInterface) (string, error) {
 	for _, avatar := range a {
 		if url, err := avatar.GetAvatarURL(u); err == nil {
 			return url, nil
@@ -48,7 +36,7 @@ type AuthAvatar struct{}
 
 var UseAuthAvatar AuthAvatar
 
-func (AuthAvatar) GetAvatarURL(u ChatUser) (string, error) {
+func (AuthAvatar) GetAvatarURL(u user.UserInterface) (string, error) {
 	url := u.AvatarURL()
 	if url != "" {
 		return url, nil
@@ -60,7 +48,7 @@ type GravatarAvatar struct{}
 
 var UseGravatar GravatarAvatar
 
-func (GravatarAvatar) GetAvatarURL(u ChatUser) (string, error) {
+func (GravatarAvatar) GetAvatarURL(u user.UserInterface) (string, error) {
 	return fmt.Sprintf("https://www.gravatar.com/avatar/%s", u.UniqueID()), nil
 }
 
@@ -68,7 +56,7 @@ type FileSystemAvatar struct{}
 
 var UseFileSystemAvatar FileSystemAvatar
 
-func (FileSystemAvatar) GetAvatarURL(u ChatUser) (string, error) {
+func (FileSystemAvatar) GetAvatarURL(u user.UserInterface) (string, error) {
 	if files, err := os.ReadDir("avatars"); err == nil {
 		for _, file := range files {
 			if !file.IsDir() && strings.HasPrefix(file.Name(), u.UniqueID()) {

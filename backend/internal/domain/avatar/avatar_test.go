@@ -1,10 +1,11 @@
-package main
+package avatar
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/fhiroki/chat/internal/domain/user"
 	"github.com/markbates/goth"
 )
 
@@ -13,7 +14,7 @@ func TestAuthAvatar(t *testing.T) {
 	testUser := goth.User{
 		AvatarURL: "",
 	}
-	testChatUser := &chatUser{User: testUser}
+	testChatUser := &user.ChatUser{User: testUser}
 	url, err := authAvatar.GetAvatarURL(testChatUser)
 	if err != ErrNoAvatarURL {
 		t.Error("AuthAvatar.GetAvatarURL should return ErrNoAvatarURL when no value present")
@@ -31,7 +32,8 @@ func TestAuthAvatar(t *testing.T) {
 
 func TestGravatarAvatar(t *testing.T) {
 	var gravatarAvatar GravatarAvatar
-	user := &chatUser{uniqueID: "abc"}
+	user := &user.ChatUser{}
+	user.SetUniqueID("abc")
 	url, err := gravatarAvatar.GetAvatarURL(user)
 	if err != nil {
 		t.Error("GravatarAvatar.GetAvatarURL should not return an error")
@@ -47,7 +49,8 @@ func TestFileSystemAvatar(t *testing.T) {
 	defer os.Remove(filename)
 
 	var fileSystemAvatar FileSystemAvatar
-	user := &chatUser{uniqueID: "abc"}
+	user := &user.ChatUser{}
+	user.SetUniqueID("abc")
 	url, err := fileSystemAvatar.GetAvatarURL(user)
 	if err != nil {
 		t.Error("FileSystemAvatar.GetAvatarURL should not return an error")
