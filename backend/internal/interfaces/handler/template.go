@@ -3,33 +3,26 @@ package handler
 import (
 	"encoding/base64"
 	"encoding/json"
-	"html/template"
-	"net/http"
-	"path/filepath"
-	"sync"
+
+	"github.com/gin-gonic/gin"
 )
 
-type TemplateHandler struct {
-	once     sync.Once
-	Filename string
-	templ    *template.Template
-}
+func TemplateHandler(filename string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		data := map[string]interface{}{
+			"Host": c.Request.Host,
+		}
 
-func (t *TemplateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	t.once.Do(func() {
-		t.templ = template.Must(template.ParseFiles(filepath.Join("templates", t.Filename)))
-	})
-	data := map[string]interface{}{
-		"Host": r.Host,
-	}
-	if authCookie, err := r.Cookie("auth"); err == nil {
-		decoded, err := base64.StdEncoding.DecodeString(authCookie.Value)
-		if err == nil {
-			var userData map[string]string
-			if jsonErr := json.Unmarshal(decoded, &userData); jsonErr == nil {
-				data["UserData"] = userData
+		if authCookie, err := c.Cookie("auth"); err == nil {
+			decoded, err := base64.StdEncoding.DecodeString(authCookie)
+			if err == nil {
+				var userData map[string]string
+				if jsonErr := json.Unmarshal(decoded, &userData); jsonErr == nil {
+					data["UserData"] = userData
+				}
 			}
 		}
+
+		c.HTML(200, filename, data)
 	}
-	t.templ.Execute(w, data)
 }

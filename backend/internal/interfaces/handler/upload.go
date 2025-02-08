@@ -2,29 +2,33 @@ package handler
 
 import (
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/gin-gonic/gin"
 )
 
-func UploaderHandler(w http.ResponseWriter, r *http.Request) {
-	userID := r.FormValue("user_id")
-	file, header, err := r.FormFile("avatar")
+func UploaderHandler(c *gin.Context) {
+	userID := c.PostForm("user_id")
+	file, header, err := c.Request.FormFile("avatar")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 	defer file.Close()
+
 	data, err := io.ReadAll(file)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
+
 	filename := filepath.Join("avatars", userID+filepath.Ext(header.Filename))
 	err = os.WriteFile(filename, data, 0777)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	io.WriteString(w, "Successful")
+
+	c.JSON(200, gin.H{"message": "Successful"})
 }

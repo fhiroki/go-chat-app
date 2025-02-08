@@ -13,6 +13,7 @@ import (
 	"github.com/fhiroki/chat/internal/domain/avatar"
 	"github.com/fhiroki/chat/internal/domain/user"
 	userDomain "github.com/fhiroki/chat/internal/domain/user"
+	"github.com/gin-gonic/gin"
 	"github.com/markbates/goth/gothic"
 )
 
@@ -30,12 +31,11 @@ func getUserID(email string) string {
 	return fmt.Sprintf("%x", m.Sum(nil))
 }
 
-// LoginHandler handles auth paths. It replaces the unexported loginHandler.
-func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	segs := strings.Split(r.URL.Path, "/")
+// LoginHandler handles auth paths for Gin
+func (h *AuthHandler) LoginHandler(c *gin.Context) {
+	segs := strings.Split(c.Request.URL.Path, "/")
 	if len(segs) < 4 {
-		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, "Auth path not found")
+		c.String(404, "Auth path not found")
 		return
 	}
 
@@ -47,65 +47,54 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch action {
 	case "login":
-		gothic.BeginAuthHandler(w, r)
+		gothic.BeginAuthHandler(c.Writer, c.Request)
 	case "callback":
-		user, err := gothic.CompleteUserAuth(w, r)
+		user, err := gothic.CompleteUserAuth(c.Writer, c.Request)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			c.String(500, err.Error())
 			return
 		}
-		cUser := &userDomain.ChatUser{User: user}
-		cUser.SetUniqueID(getUserID(user.Email))
-		avatarUrl, err := avatar.Avatars.GetAvatarURL(cUser)
+
+		userID := getUserID(user.Email)
+		chatUser := &userDomain.ChatUser{User: user}
+		chatUser.SetUniqueID(userID)
+		avatarURL, err := avatar.Avatars.GetAvatarURL(chatUser)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			c.String(500, err.Error())
 			return
 		}
-		data := map[string]string{
-			"user_id":    cUser.UniqueID(),
+
+		userData := map[string]string{
+			"user_id":    userID,
 			"name":       user.Name,
 			"email":      user.Email,
-			"avatar_url": avatarUrl,
+			"avatar_url": avatarURL,
 		}
-		jsonData, err := json.Marshal(data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		authCookieValue := base64.StdEncoding.EncodeToString(jsonData)
-		http.SetCookie(w, &http.Cookie{
-			Name:  "auth",
-			Value: authCookieValue,
-			Path:  "/",
-		})
 
-		if err := h.userService.Create(r.Context(), userDomain.User{
-			ID:        cUser.UniqueID(),
+		userJSON, _ := json.Marshal(userData)
+		encoded := base64.StdEncoding.EncodeToString(userJSON)
+
+		c.SetCookie("auth", encoded, int(time.Hour*24*7/time.Second), "/", c.Request.Host, false, true)
+
+		// ユーザー情報の保存
+		u := userDomain.User{
+			ID:        userID,
 			Name:      user.Name,
 			Email:     user.Email,
-			AvatarURL: avatarUrl,
+			AvatarURL: avatarURL,
 			CreatedAt: time.Now(),
-		}); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		if err := h.userService.Create(c.Request.Context(), u); err != nil {
+			c.String(500, err.Error())
 			return
 		}
 
-		w.Header().Set("Location", "http://localhost:8080/chat")
-		w.WriteHeader(http.StatusTemporaryRedirect)
-	default:
-		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, "Auth action %s not supported", action)
+		c.Redirect(302, "/chat")
 	}
 }
 
-// LogoutHandler handles logging out
-func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{
-		Name:   "auth",
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1,
-	})
-	w.Header().Set("Location", "http://localhost:8080/login")
-	w.WriteHeader(http.StatusTemporaryRedirect)
+// LogoutHandler handles logout for Gin
+func (h *AuthHandler) LogoutHandler(c *gin.Context) {
+	c.SetCookie("auth", "", -1, "/", c.Request.Host, false, true)
+	c.Redirect(302, "/login")
 }

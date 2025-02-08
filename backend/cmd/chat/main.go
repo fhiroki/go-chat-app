@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/fhiroki/chat/internal/domain/message"
@@ -14,6 +13,7 @@ import (
 	"github.com/fhiroki/chat/internal/interfaces/handler"
 	"github.com/fhiroki/chat/internal/interfaces/middleware"
 	"github.com/fhiroki/chat/internal/trace"
+	"github.com/gin-gonic/gin"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/providers/github"
 	"github.com/markbates/goth/providers/google"
@@ -56,19 +56,28 @@ func main() {
 		github.New(os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"), os.Getenv("GITHUB_REDIRECT_URL")),
 	)
 
-	http.Handle("/chat", middleware.MustAuth(&handler.TemplateHandler{Filename: "chat.html"}))
-	http.Handle("/login", &handler.TemplateHandler{Filename: "login.html"})
-	http.Handle("/upload", &handler.TemplateHandler{Filename: "upload.html"})
-	http.Handle("/avatars/", http.StripPrefix("/avatars/", http.FileServer(http.Dir("./avatars"))))
-	http.HandleFunc("/uploader", handler.UploaderHandler)
-	http.HandleFunc("/logout", authHandler.LogoutHandler)
-	http.HandleFunc("/auth/", authHandler.LoginHandler)
-	http.HandleFunc("/messages", messageHandler.HandleMessages)
-	http.HandleFunc("/messages/delete", messageHandler.DeleteMessage)
-	http.Handle("/room", room)
+	r := gin.Default()
+	r.LoadHTMLGlob("templates/*")
+	r.Static("/avatars", "./avatars")
+
+	// ミドルウェアの設定
+	auth := r.Group("/", middleware.MustAuth())
+
+	// ルーティングの設定
+	auth.GET("/chat", handler.TemplateHandler("chat.html"))
+	auth.GET("/upload", handler.TemplateHandler("upload.html"))
+	auth.POST("/uploader", handler.UploaderHandler)
+	auth.GET("/messages", messageHandler.GetMessages)
+	auth.POST("/messages", messageHandler.CreateMessage)
+	auth.DELETE("/messages/:id", messageHandler.DeleteMessage)
+	auth.GET("/room", room.HandleWebSocket)
+
+	r.GET("/login", handler.TemplateHandler("login.html"))
+	r.GET("/logout", authHandler.LogoutHandler)
+	r.GET("/auth/*provider", authHandler.LoginHandler)
 
 	go room.Run()
-	if err := http.ListenAndServe(*addr, nil); err != nil {
+	if err := r.Run(*addr); err != nil {
 		log.Fatal(err)
 	}
 }

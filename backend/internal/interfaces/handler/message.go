@@ -1,11 +1,10 @@
 package handler
 
 import (
-	"encoding/json"
-	"net/http"
 	"strconv"
 
 	"github.com/fhiroki/chat/internal/domain/message"
+	"github.com/gin-gonic/gin"
 )
 
 type MessageHandler struct {
@@ -18,62 +17,42 @@ func NewMessageHandler(messageService message.MessageService) *MessageHandler {
 	}
 }
 
-func (h *MessageHandler) HandleMessages(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	switch r.Method {
-	case http.MethodGet:
-		messages, err := h.messageService.FindAll(ctx)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(messages)
-
-	case http.MethodPost:
-		var msg message.Message
-		if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		if err := h.messageService.Create(ctx, &msg); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusCreated)
-	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+func (h *MessageHandler) GetMessages(c *gin.Context) {
+	messages, err := h.messageService.FindAll(c.Request.Context())
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
 	}
+	c.JSON(200, messages)
 }
 
-func (h *MessageHandler) DeleteMessage(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-	w.Header().Set("Access-Control-Allow-Methods", "DELETE, OPTIONS")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
+func (h *MessageHandler) CreateMessage(c *gin.Context) {
+	var msg message.Message
+	if err := c.ShouldBindJSON(&msg); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, "ID required", http.StatusBadRequest)
+	if err := h.messageService.Create(c.Request.Context(), &msg); err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	idInt, err := strconv.Atoi(id)
+
+	c.Status(201)
+}
+
+func (h *MessageHandler) DeleteMessage(c *gin.Context) {
+	ctx := c.Request.Context()
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		c.JSON(400, gin.H{"error": "Invalid message ID"})
 		return
 	}
 
-	if err := h.messageService.Delete(r.Context(), idInt); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := h.messageService.Delete(ctx, id); err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	c.Status(204)
 }

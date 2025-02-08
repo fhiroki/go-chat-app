@@ -4,10 +4,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"log"
-	"net/http"
 
 	"github.com/fhiroki/chat/internal/domain/message"
 	"github.com/fhiroki/chat/internal/trace"
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
@@ -53,19 +53,22 @@ func (r *room) Run() {
 	}
 }
 
-func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	socket, err := r.upgrader.Upgrade(w, req, nil)
+func (r *room) HandleWebSocket(c *gin.Context) {
+	socket, err := r.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Fatal("ServeHTTP:", err)
 		return
 	}
 
-	userData := make(map[string]string)
-	if authCookie, err := req.Cookie("auth"); err == nil {
-		userData = parseUserData(authCookie.Value)
+	authCookie, err := c.Cookie("auth")
+	if err != nil {
+		log.Fatal("Failed to get auth cookie:", err)
+		return
 	}
 
+	userData := parseUserData(authCookie)
 	client := newClient(socket, r, userData, r.msgService)
+
 	r.Join <- client
 	defer func() { r.Leave <- client }()
 	go client.write()
@@ -73,11 +76,17 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func parseUserData(cookieValue string) map[string]string {
-	userData := make(map[string]string)
-	if decoded, err := base64.StdEncoding.DecodeString(cookieValue); err == nil {
-		if err := json.Unmarshal(decoded, &userData); err != nil {
-			log.Printf("Failed to unmarshal auth cookie: %v", err)
-		}
+	decoded, err := base64.StdEncoding.DecodeString(cookieValue)
+	if err != nil {
+		log.Fatal("Failed to decode cookie value:", err)
+		return nil
 	}
+
+	var userData map[string]string
+	if err = json.Unmarshal(decoded, &userData); err != nil {
+		log.Fatal("Failed to decode user data JSON:", err)
+		return nil
+	}
+
 	return userData
 }
