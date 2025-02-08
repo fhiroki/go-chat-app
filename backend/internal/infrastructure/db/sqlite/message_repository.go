@@ -43,7 +43,7 @@ func (r *messageRepository) FindAll(ctx context.Context) ([]*message.Message, er
 	query := `
 		SELECT id, user_id, content, created_at, updated_at
 		FROM messages
-		ORDER BY created_at DESC
+		ORDER BY created_at ASC
 	`
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {

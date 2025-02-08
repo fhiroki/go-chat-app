@@ -31,6 +31,27 @@
       vertical-align: middle;
       margin-right: 5px;
     }
+
+    .delete-btn {
+      color: #dc3545;
+      cursor: pointer;
+      margin-left: 10px;
+      font-size: 0.9em;
+    }
+
+    .delete-btn:hover {
+      color: #c82333;
+    }
+
+    .message-info {
+      margin-left: 25px;
+      display: flex;
+      align-items: center;
+    }
+
+    .message-date {
+      color: #6c757d;
+    }
   </style>
 </head>
 
@@ -62,13 +83,15 @@
       var socket = null;
       var msgBox = $("#message");
       var messages = $("#messages");
+      var currentUserEmail = "{{ .UserData.email }}";
+
       $("#chatbox").submit(function () {
         if (!msgBox.val()) return false;
         if (!socket) {
           alert("error: socket not connected");
           return false;
         }
-        socket.send(JSON.stringify({ "content": msgBox.val() }));
+        socket.send(JSON.stringify({ "content": msgBox.val(), "email": "{{ .UserData.email }}", "avatar_url": "{{ .UserData.avatar_url }}" }));
         msgBox.val("");
         return false;
       });
@@ -92,16 +115,42 @@
             var t = new Date(msg.created_at);
             created_at = t.toLocaleString();
           }
-          messages.append($("<li>").append(
+
+          var deleteButton = msg.email === currentUserEmail
+            ? $("<span>").addClass("delete-btn").text("削除").data("message-id", msg.id)
+            : '';
+
+          var messageItem = $("<li>").attr('id', `message-${msg.id}`).append(
             $("<img>").attr("title", msg.email).attr("src", msg.avatar_url),
             $("<span>").text(msg.email),
             $("<br>"),
             $("<span>").text(msg.content).css({ "margin-left": "25px" }),
             $("<br>"),
-            $("<span>").text("[" + created_at + "]").css({ "margin-left": "25px" })));
+            $("<div>").addClass("message-info").append(
+              $("<span>").addClass("message-date").text("[" + created_at + "]"),
+              deleteButton
+            )
+          );
+
+          messages.append(messageItem);
         }
+
+        messages.on("click", ".delete-btn", function() {
+          var messageId = $(this).data("message-id");
+          $.ajax({
+            url: '/messages/' + messageId,
+            type: 'DELETE',
+            success: function() {
+              $(`#message-${messageId}`).remove();
+            },
+            error: function(xhr, status, error) {
+              console.error('Error deleting message:', error);
+              alert('メッセージの削除に失敗しました');
+            }
+          });
+        });
       }
-    })
+    });
   </script>
 </body>
 
