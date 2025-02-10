@@ -23,7 +23,7 @@ func UploaderHandler(c *gin.Context) {
 		return
 	}
 
-	filename := filepath.Join("avatars", userID+filepath.Ext(header.Filename))
+	filename := filepath.Join("assets", "avatars", userID+filepath.Ext(header.Filename))
 	err = os.WriteFile(filename, data, 0777)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})

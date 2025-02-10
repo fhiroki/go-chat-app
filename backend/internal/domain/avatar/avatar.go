@@ -57,10 +57,10 @@ type FileSystemAvatar struct{}
 var UseFileSystemAvatar FileSystemAvatar
 
 func (FileSystemAvatar) GetAvatarURL(u user.UserInterface) (string, error) {
-	if files, err := os.ReadDir("avatars"); err == nil {
+	if files, err := os.ReadDir("assets/avatars"); err == nil {
 		for _, file := range files {
 			if !file.IsDir() && strings.HasPrefix(file.Name(), u.UniqueID()) {
-				return "/avatars/" + file.Name(), nil
+				return "/assets/avatars/" + file.Name(), nil
 			}
 		}
 	}
