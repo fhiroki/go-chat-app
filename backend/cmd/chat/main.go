@@ -58,7 +58,7 @@ func main() {
 
 	r := gin.Default()
 	r.LoadHTMLGlob("templates/*")
-	r.Static("/avatars", "./avatars")
+	r.Static("/assets", "./assets")
 
 	// ミドルウェアの設定
 	auth := r.Group("/", middleware.MustAuth())
